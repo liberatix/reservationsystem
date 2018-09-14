@@ -18,6 +18,7 @@ Then look at the business logic in the .lua files.
 More updates will be available on https://automaton.network
 
 Team Members:
-asen
-kari
-samir
+
+* asen
+* kari
+* samir
