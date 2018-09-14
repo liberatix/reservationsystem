@@ -1,4 +1,4 @@
-# Reservation System 1 day NextBlock Hackathon
+# Team Automaton - Reservation System NextBlock Hackathon (1 day, Sept 14th, 2018)
 
 We will try to implement a scalable permissioned hotel reservation system with a custom blockchain implementation.
 
