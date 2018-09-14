@@ -10,7 +10,7 @@ function update(time)
 
   cr_timer = cr_timer - 1
   if cr_timer <= 0 then
-    create_random_reservation()
+    -- create_random_reservation()
     cr_timer = math.random(200, 1000)
   end
 end
@@ -24,6 +24,24 @@ function create_random_reservation()
       end_day,
       public_key)
   on_CreateReservation(0, tx)
+end
+
+function reserve(room_id, start_day, end_day)
+  tx = create_tx("create",
+      { room_id },
+      start_day,
+      end_day,
+      public_key)
+  on_CreateReservation(0, tx)
+end
+
+function cancel(room_id, start_day, end_day)
+  tx = create_tx("cancel",
+      { room_id },
+      start_day,
+      end_day,
+      public_key)
+  on_CancelReservation(0, tx)
 end
 
 function sent(peer_id, msg_id, success)
@@ -64,8 +82,6 @@ function apply_transition(st)
 
 end
 
-
-
 function valid_transition(st)
   if st.epoch ~= epoch + 1 then
     return false
@@ -74,7 +90,7 @@ function valid_transition(st)
     rooms_local[i] = {}
   end
   for _,r in ipairs(st.reservations) do
-    if not is_valid_signature(r) then
+    if not is_valid_signature(r, "create") then
       return false
     end
     if not conflicting_reservation(r) then
@@ -89,7 +105,7 @@ function valid_transition(st)
   end
 
   for _,c in ipairs(st.cancellations) do
-    if not is_valid_signature(c) then
+    if not is_valid_signature(c, "cancel") then
       return false
     end
     if not conflicting_cancellation(c) then
@@ -108,14 +124,12 @@ function valid_transition(st)
   local serialized = st:serialize()
   local state_valid = secp256k1_verify(validators_sorted[epoch % TOTAL_VALIDATORS + 1], serialized, signature)
   st.signature = signature
-
   return state_valid
 end
 
-msg_hash = {}
-
 function on_CreateReservation(peer_id, reservation)
-  if not is_valid_signature(reservation) then
+  if pending_reservations[reservation.client_signature] or
+      (not is_valid_signature(reservation, "create")) then
     return
   end
   for _,v in pairs(reservation.room_id) do
@@ -136,17 +150,14 @@ function on_CreateReservation(peer_id, reservation)
   --   end
   -- end
 
-  hash = sha3(reservation:serialize())
-  if not msg_hash[hash] then
-    msg_hash[hash] = true
-    log("on_CreateReservation", tostring(peer_id) .. reservation:to_json())
-    pending_reservations[reservation.client_signature] = reservation
-    gossip(peer_id, reservation)
-  end
+  log("on_CreateReservation", tostring(peer_id) .. reservation:to_json())
+  pending_reservations[reservation.client_signature] = reservation
+  gossip(peer_id, reservation)
 end
 
 function on_CancelReservation(peer_id, cancellation)
-  if not is_valid_signature(cancellation) then
+  if pending_cancellations[cancellation.client_signature] or
+      (not is_valid_signature(cancellation, "cancel")) then
     return
   end
   for _,v in pairs(cancellation.room_id) do
@@ -166,12 +177,9 @@ function on_CancelReservation(peer_id, cancellation)
   --   end
   -- end
 
-  hash = sha3(cancellation:serialize())
-  if not msg_hash[hash] then
-    msg_hash[hash] = true
-    pending_cancellations[cancellation.client_signature] = cancellation
-    gossip(peer_id, cancellation)
-  end
+  log("on_CancelReservation", tostring(peer_id) .. cancellation:to_json())
+  pending_cancellations[cancellation.client_signature] = cancellation
+  gossip(peer_id, cancellation)
 end
 
 function create_tx(tx_type, rooms, start_day, end_day, client_public_key)
@@ -191,14 +199,7 @@ function create_tx(tx_type, rooms, start_day, end_day, client_public_key)
   msg.end_day = end_day
   msg.client_public_key = client_public_key
   local to_sign = table.concat(rooms, "")
-  to_sign = to_sign .. tostring(start_day) .. tostring(end_day)
+  to_sign = tx_type .. to_sign .. tostring(start_day) .. tostring(end_day)
   msg.client_signature = secp256k1_sign(private_key, to_sign)
   return msg
 end
-
-function tests()
-
-end
-
-
-tests()
