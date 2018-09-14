@@ -14,3 +14,5 @@ It's best to first start looking at the protocol message schema definition:
 https://github.com/liberatix/reservationsystem/blob/master/reservationsystem.proto
 
 Then look at the business logic in the .lua files.
+
+More updates will be available on https://automaton.network
