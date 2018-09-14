@@ -1,4 +1,5 @@
-# Team Automaton - Reservation System NextBlock Hackathon
+# Spacer - Reserve Your Space!
+## Team Automaton | Reservation System | NextBlock Hackathon
 *(Sept 14th, 2018)*
 
 We will try to implement a scalable permissioned hotel reservation system with a custom blockchain implementation.
